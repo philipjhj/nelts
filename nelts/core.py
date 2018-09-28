@@ -37,11 +37,8 @@ class FrequentPatternMaintenance:
     """
     Functionality:
         - pre-train offline
+        - evaluate new subsequences compared to the buffer
 
-         Steps:
-         0: offline training of the reference subtrees using "pattern-free
-         data" of sizes 2 to max_subtree_size
-         1:
            Question(1): Do they only extract the subtrees of a certain size or
            compute subtrees for all subsets of data?
            Answer(1): They only consider subtrees of size maxSubtreeSize and
@@ -49,7 +46,7 @@ class FrequentPatternMaintenance:
            their score
            Question(2): Is max_subtree_size the number of all nodes in a subtree
            or is it the number of leaf nodes?
-           Answer(2): ????
+           Answer(2): All nodes in the subtree minus 1 (the root)
     """
 
     def __init__(self, w=20, max_subtree_size=4, n_top_subtrees=6, linkage_method='average'):
@@ -105,6 +102,11 @@ class FrequentPatternMaintenance:
 
 
 def get_label_from_stream(labels, position):
+    """ A simple function getting labels from a given list as in the example
+    of the MATLAB implementation.
+
+    TODO: refactor code to better handle requests from labels
+    """
     return labels[position]
 
 
@@ -153,8 +155,11 @@ class SequenceData:
 
 class NELTS:
     """ python implementation of nelts
-        differences to the algorithm described in the paper/provided in the
-        matlab implementation:
+
+        Notes:
+        -------
+        Differences to the algorithm described in the paper/provided in the
+        MATLAB implementation:
 
             - the subsequenceprocessing is only domain-dependent as the
             domain_dependent_processing function is a part of it; an assumption
@@ -163,7 +168,7 @@ class NELTS:
 
         concerns about the matlab implementation:
             (1) they use the linkage method 'single' for offline training
-            instead of using 'average' as in the online algorithm.
+            instead of using 'average' as they do in the online algorithm.
             (2) the "permutations" they perform are flipping of the given
             subsequence either horizontially or vertically. so they are not
             scrambling the sequence as one might expect.
@@ -214,14 +219,14 @@ class NELTS:
         self.concept_dict = {'labels': [], 'thresholds': [], 'counts': [],
                              'prototypes': []}
 
-    def never_ending_learning(self, subsequence_length, S=None, p=None,
+    def never_ending_learning(self, subsequence_length, S=None, P=None,
                               options=None):
 
-        if S is None and p is not None:
-            self.S = self.transform_p_to_s(p)
+        if S is None and P is not None:
+            self.S = self.transform_P_to_s(P)
         elif S is not None:
             self.S = SequenceData(S, subsequence_length)
-            self.p = p
+            self.P = P
         else:
             print('No data given...')
             return
@@ -282,18 +287,19 @@ class NELTS:
 
     @staticmethod
     def parse_settings(settings):
-        # Notes compared to the MATLAB script example_activity.m
-        #
-        # max_subtree_size (aka overflow_num) is set to 6 in the
-        # example_activity.m script, but the MATLAB implementation counts all
-        # nodes in the subtree except the root.
-        # E.g. a subtree with 4 leafs then have 7-1 nodes.
-        # Here we simply count the leafs and restrict them
-        #
-        # n_top_subtrees corresponds to K mentioned briefly in the paper
-        #
-        # The default values here follow the example_activity.m or hardcoded
-        # values in the MATLAB implementation
+        """ Notes compared to the MATLAB script example_activity.m
+
+         max_subtree_size (aka overflow_num) is set to 6 in the
+         example_activity.m script, but the MATLAB implementation counts all
+         nodes in the subtree except the root.
+         E.g. a subtree with 4 leafs then have 7-1 nodes.
+         Here we simply count the leafs and restrict them
+
+         n_top_subtrees corresponds to K mentioned briefly in the paper
+
+         The default values here follow the example_activity.m or hardcoded
+         values in the MATLAB implementation
+        """
 
         default_settings = {'max_subtree_size': 4,
                             'n_top_subtrees': 6,
