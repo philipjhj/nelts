@@ -141,7 +141,7 @@ class HierarchicalClustering:
         """
         info_subtrees = self.extract_subtree_info(subtrees, compute_score=True)
 
-        nonoverlapping_subtrees = []
+        self.nonoverlapping_subtrees = []
         seen_leafs = set()
 
         for info_subtree in info_subtrees:
@@ -150,11 +150,11 @@ class HierarchicalClustering:
                 seen_leafs = seen_leafs.union(set(leafs))
                 continue
 
-            nonoverlapping_subtrees.append(info_subtree)
+            self.nonoverlapping_subtrees.append(info_subtree)
 
             seen_leafs = seen_leafs.union(set(leafs))
 
-        return nonoverlapping_subtrees
+        return self.nonoverlapping_subtrees
 
     def extract_subtree_info(self, subtrees, compute_score=False):
         info_subtrees = []
@@ -176,7 +176,8 @@ class HierarchicalClustering:
         else:
             sort_key = 'dist'
 
-        info_subtrees = sorted(info_subtrees, key=lambda k: k[sort_key])
+        info_subtrees = sorted(
+            info_subtrees, key=lambda k: k[sort_key], reverse=True)
 
         return info_subtrees
 
@@ -189,21 +190,38 @@ class HierarchicalClustering:
 
         return score
 
-    def plot_current(self, frequent_pattern_buffer):
+    def plot_status(self, frequent_pattern_buffer):
 
         self.output_widget.clear_output(wait=True)
         with self.output_widget:
-            plt.figure(figsize=(10, 15))
-            gs = gridspec.GridSpec(20, 3)
-            ax1 = plt.subplot(gs[:, :1])
+            plt.figure(figsize=(15, 15))
+            gs0 = gridspec.GridSpec(1, 2)
+            gs00 = gridspec.GridSpecFromSubplotSpec(20, 5, subplot_spec=gs0[0],
+                                                    wspace=0.35)
+            gs01 = gridspec.GridSpecFromSubplotSpec(20, 5, subplot_spec=gs0[1])
+            # gs00.update(wspace=0.35)
+            # gs01.update(hspace=0.35)
+            ax1 = plt.subplot(gs00[:, :3])
             ax = []
             for i in range(20):
-                ax.append(plt.subplot(gs[i, 1:3]))
+                ax.append(plt.subplot(gs00[i, 3:5]))
                 ax[i].plot(frequent_pattern_buffer[i, :])
-                ax[i].set_xticks([])
-                ax[i].set_yticks([])
+                # ax[i].set_xticks([])
+                # ax[i].set_yticks([])
+                ax[i].axis('off')
 
             dn = hierarchy.dendrogram(self.Z, orientation='left', ax=ax1)
+
+            ax_top = []
+            for i, subtree in enumerate(self.nonoverlapping_subtrees):
+                ax_top.append(plt.subplot(gs01[2*i:2*(i+1), :]))
+                for leaf in subtree['leafs']:
+                    ax_top[i].plot(frequent_pattern_buffer[leaf, :], 'b')
+
+                mean_pattern = np.mean(
+                    frequent_pattern_buffer[subtree['leafs'], :], axis=0)
+                ax_top[i].plot(mean_pattern, 'r', linewidth=5)
+
             plt.show()
             #input("Press Enter to continue...")
-            sleep(0.5)
+            # sleep(0.1)

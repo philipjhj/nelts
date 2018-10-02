@@ -1,9 +1,13 @@
 from sklearn.neighbors import NearestNeighbors
+from sklearn.decomposition import PCA
 from scipy.stats import zscore, norm
 import numpy as np
-from pdb import set_trace
+from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
 
 from . hierarchical_clustering import HierarchicalClustering
+
+from pdb import set_trace
 
 
 class SubsequenceProcessing:
@@ -49,11 +53,13 @@ class FrequentPatternMaintenance:
            Answer(2): All nodes in the subtree minus 1 (the root)
     """
 
-    def __init__(self, w=20, max_subtree_size=4, n_top_subtrees=6, linkage_method='average'):
+    def __init__(self, w=20, max_subtree_size=4, n_top_subtrees=6, linkage_method='average',
+                 output_mode='plotting'):
         # Set parameters
         self.w = w  # Size of hierarchical_clustering (memory)
         self.max_subtree_size = max_subtree_size
         self.n_top_subtrees = n_top_subtrees
+        self.output_mode = output_mode
 
         self.hierarchical_clustering = HierarchicalClustering(
             self.w, self.max_subtree_size, self.n_top_subtrees, linkage_method)
@@ -74,8 +80,9 @@ class FrequentPatternMaintenance:
             x = frequent_pattern_buffer
             top = self.hierarchical_clustering.most_significant_subtree(x)
 
-            if hasattr(self.hierarchical_clustering, 'Z'):
-                self.hierarchical_clustering.plot_current(x)
+            if (hasattr(self.hierarchical_clustering, 'Z') and
+                    self.output_mode == 'plotting'):
+                self.hierarchical_clustering.plot_status(x)
 
         return top, frequent_pattern_buffer
 
@@ -154,7 +161,7 @@ class SequenceData:
 
 
 class NELTS:
-    """ python implementation of nelts
+    """ python implementation of NELTS
 
         Notes:
         -------
@@ -208,7 +215,8 @@ class NELTS:
         self.frequent_pattern_maintenance = frequent_pattern_maintenance(
             self.settings['w'], self.settings['max_subtree_size'],
             self.settings['n_top_subtrees'],
-            self.settings['linkage_method'])
+            self.settings['linkage_method'],
+            self.settings['output_mode'])
 
         self.active_learning_system = active_learning_system(
             self.settings['query_trigger_threshold'],
@@ -236,16 +244,22 @@ class NELTS:
 
         for sub, pos in self.get_next_subsequence_from_S():
             # print(pos)
-            detected, self.concept_dict = self.subsequence_processing.detect(
-                sub, self.concept_dict)
-            if not detected:
-                top, self.frequent_pattern_buffer = self.frequent_pattern_maintenance.evaluate(
-                    sub, self.frequent_pattern_buffer)
-                self.concept_dict, self.frequent_pattern_buffer = self.active_learning_system.evaluate(
-                    top, self.concept_dict, self.frequent_pattern_buffer,
-                    pos)
+            try:
+                detected, self.concept_dict = self.subsequence_processing.detect(
+                    sub, self.concept_dict)
+                if not detected:
+                    top, self.frequent_pattern_buffer = self.frequent_pattern_maintenance.evaluate(
+                        sub, self.frequent_pattern_buffer)
+                    self.concept_dict, self.frequent_pattern_buffer = self.active_learning_system.evaluate(
+                        top, self.concept_dict, self.frequent_pattern_buffer,
+                        pos)
+            except KeyboardInterrupt:
 
-        print('Stream is empty')
+                break
+
+        print('Stream is empty. Plotting learned concepts')
+
+        self.plot_concept_dict()
 
     def initialize_learning(self):
         """ pre-trains the frequentpatternmaintenance algorithm and finds a
@@ -285,6 +299,33 @@ class NELTS:
         print('Getting S from P... or not')
         return NotImplemented
 
+    def plot_concept_dict(self):
+
+        pca = PCA(n_components=2)
+        prototypes = np.vstack(self.concept_dict['prototypes'])
+        prototypes_2d = pca.fit_transform(prototypes)
+
+        colors = 'rgby'  # TODO: make this dynamic
+
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 10))
+
+        for i, prototype in enumerate(prototypes_2d):
+            color = colors[self.concept_dict['labels'][i]-1]
+            ax1.plot(prototype[0], prototype[1], '.', color=color)
+            width = self.concept_dict['thresholds'][i]/pca.singular_values_[0]
+            height = self.concept_dict['thresholds'][i]/pca.singular_values_[1]
+            ax1.add_artist(Ellipse((prototype[0], prototype[1]),
+                                   width, height,
+                                   color=color, fill=False))
+
+        # for i, label in enumerate(np.unique(self.concept_dict['labels'])):
+        #    for idx in np.where(self.concept_dict
+        #        ax2.plot(prototype)
+        #    ax2.plot(prototype)
+        #    ax2.title(self.concept_dict['labels'][i])
+
+        plt.show()
+
     @staticmethod
     def parse_settings(settings):
         """ Notes compared to the MATLAB script example_activity.m
@@ -307,7 +348,8 @@ class NELTS:
                             'linkage_method': 'average',
                             'n_offline_samples': 1e5,
                             'threshold_factor': 1,
-                            'query_trigger_threshold': -norm.ppf(0.7)
+                            'query_trigger_threshold': -norm.ppf(0.7),
+                            'output_mode': 'plotting'
                             }
 
         for key, value in default_settings.items():
