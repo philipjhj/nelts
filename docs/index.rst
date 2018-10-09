@@ -11,6 +11,11 @@ Welcome to nelts's documentation!
    :caption: Contents:
 
 
+.. autosummary::
+   :toctree: _modules
+
+   nelts
+
 
 Indices and tables
 ==================
