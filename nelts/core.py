@@ -7,8 +7,6 @@ from matplotlib.patches import Ellipse
 
 from . hierarchical_clustering import HierarchicalClustering
 
-from pdb import set_trace
-
 
 class SubsequenceProcessing:
 
@@ -161,26 +159,29 @@ class SequenceData:
 
 
 class NELTS:
-    """ python implementation of NELTS
+    """Concept learner NELTS (Towards Never-Ending Learning for Time-Series)
 
-        Notes:
-        -------
-        Differences to the algorithm described in the paper/provided in the
-        MATLAB implementation:
+    Parameters
+    ----------
 
-            - the subsequenceprocessing is only domain-dependent as the
-            domain_dependent_processing function is a part of it; an assumption
-            that this is already handled beforehand was made here
-            -. ...
+    Notes
+    -------
+    Differences to the algorithm described in the paper/provided in the
+    MATLAB implementation:
 
+        - the subsequenceprocessing is only domain-dependent as the
+        domain_dependent_processing function is a part of it; an assumption
+        was made here that this is already handled beforehand
+        - some differences are explained in the parse_settings(...) function
+
+    .. warning::
         concerns about the matlab implementation:
             (1) they use the linkage method 'single' for offline training
             instead of using 'average' as they do in the online algorithm.
             (2) the "permutations" they perform are flipping of the given
-            subsequence either horizontially or vertically. so they are not
-            scrambling the sequence as one might expect.
-            this version of the python implementation performs the same
-            "permutations".
+            subsequence either horizontially or vertically. So they are not
+            scrambling the sequence as one might expect. This version of the
+            python implementation performs the same "permutations".
             (3) the paper states that the threshold used for the concepts is
             three times the height of top subtree, but it is computed
             incorrectly. see line 98 in "mypatternfinder_multilabels_v4.mat".
