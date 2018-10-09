@@ -14,7 +14,7 @@ Welcome to nelts's documentation!
 .. autosummary::
    :toctree: _modules
 
-   nelts
+   ..class: NELTS
 
 
 Indices and tables
