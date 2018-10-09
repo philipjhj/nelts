@@ -169,24 +169,26 @@ class NELTS:
     Differences to the algorithm described in the paper/provided in the
     MATLAB implementation:
 
-        - the subsequenceprocessing is only domain-dependent as the
-        domain_dependent_processing function is a part of it; an assumption
-        was made here that this is already handled beforehand
+        - | the subsequenceprocessing is only domain-dependent as the
+          | domain_dependent_processing function is a part of it; an assumption
+          | was made here that this is already handled beforehand
         - some differences are explained in the parse_settings(...) function
 
-    .. warning::
-        concerns about the matlab implementation:
-            (1) they use the linkage method 'single' for offline training
-            instead of using 'average' as they do in the online algorithm.
-            (2) the "permutations" they perform are flipping of the given
-            subsequence either horizontially or vertically. So they are not
-            scrambling the sequence as one might expect. This version of the
-            python implementation performs the same "permutations".
-            (3) the paper states that the threshold used for the concepts is
-            three times the height of top subtree, but it is computed
-            incorrectly. see line 98 in "mypatternfinder_multilabels_v4.mat".
-            also note, it uses only one time the incorrect height of the top
-            subtree in the example_activity.mat script.
+
+    .. attention:: When considering the matlab implementation, be aware of
+
+       #. The implementation uses the linkage method 'single' for offline training
+          instead of using 'average' as they do in the online algorithm.
+       #. The "permutations" performed are flipping of the given
+          subsequence either horizontially or vertically. So the sequences are
+          not scrambled as one might expect. This version of the python
+          implementation performs the same "permutations".
+       #. The paper states that the threshold used for the concepts is
+          three times the height of top subtree, but it is computed incorrectly.
+          See line 98 in "mypatternfinder_multilabels_v4.mat".
+          Also note it uses only one time the incorrect height of the top
+          subtree in the example_activity.mat script.
+
 
     """
 
@@ -329,18 +331,21 @@ class NELTS:
 
     @staticmethod
     def parse_settings(settings):
-        """ Notes compared to the MATLAB script example_activity.m
+        """
 
-         max_subtree_size (aka overflow_num) is set to 6 in the
-         example_activity.m script, but the MATLAB implementation counts all
-         nodes in the subtree except the root.
-         E.g. a subtree with 4 leafs then have 7-1 nodes.
-         Here we simply count the leafs and restrict them
 
-         n_top_subtrees corresponds to K mentioned briefly in the paper
+        .. note:: Settings compared to the MATLAB script example_activity.m
 
-         The default values here follow the example_activity.m or hardcoded
-         values in the MATLAB implementation
+           max_subtree_size (aka overflow_num) is set to 6 in the
+           example_activity.m script, but the MATLAB implementation counts all
+           nodes in the subtree except the root.
+           E.g. a subtree with 4 leafs then have 7-1 nodes.
+           Here we simply count the leafs and restrict them
+
+           n_top_subtrees corresponds to K mentioned briefly in the paper
+
+           The default values here follow the example_activity.m or hardcoded
+           values in the MATLAB implementation
         """
 
         default_settings = {'max_subtree_size': 4,
