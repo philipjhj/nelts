@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/nelts/badge/?version=latest)](https://nelts.readthedocs.io/en/latest/?badge=latest)
+                
 # NELTS
 
 This is a python implementation of the NELTS algorithm described in [[1]](#neltspaper).
