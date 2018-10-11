@@ -7,6 +7,8 @@ from matplotlib.patches import Ellipse
 
 from . hierarchical_clustering import HierarchicalClustering
 
+from pdb import set_trace
+
 
 class SubsequenceProcessing:
 
@@ -163,16 +165,62 @@ class NELTS:
 
     Parameters
     ----------
+    labels: list of str
+        the labels for each subsequence. This might not be available to you,
+        and should not be an input here. Will be refactored away soon.
+
+    max_subtree_size: int, default=4
+        Maximum number of leafs allowed in the subtrees for consideration
+
+    n_top_subtrees: int, default=6
+        Number of most significant subtrees to consider
+
+    w: int, default=20
+        size of the buffer holding the subsequences for the hierarchical
+        clustering
+
+    linkage_method: str, default 'average'
+        Method used for the hierarchical clustering. See the `scipy docs
+        <https://docs.scipy.org/doc/scipy/reference/cluster.hierarchy.html>`_
+        for a description of the available options.
+
+    n_offline_samples: int, default=1e5
+        Number of subsequences sampled for learning the baseline parameters for
+        each subtree size
+
+    threshold_factor: float, default=1
+        Factor being multiplied with the significant score for setting the
+        threshold when defining a new concept.
+
+    query_trigger_threshold: float, default=-norm.ppf(0.7),
+        Threshold for when a significance score should trigger a request for a
+        label
+
+    output_mode: str, default = 'plotting'
+        Setting for choosing what kind of output should be given
 
     Notes
     -------
-    Differences to the algorithm described in the paper/provided in the
-    MATLAB implementation:
+    .. note:: Differences to the algorithm described in the paper/provided in the MATLAB implementation:
 
-        - | the subsequenceprocessing is only domain-dependent as the
-          | domain_dependent_processing function is a part of it; an assumption
-          | was made here that this is already handled beforehand
-        - some differences are explained in the parse_settings(...) function
+       -  the subsequenceprocessing is only domain-dependent as the
+          domain_dependent_processing function is a part of it; an assumption
+          was made here that this is already handled beforehand
+       - Some parameters have a slightly different meaning here, see the note
+         on settings for more details.
+
+    .. note:: Settings compared to the MATLAB script example_activity.m
+
+       *max_subtree_size* (aka overflow_num) is set to 6 in the
+       example_activity.m script, but the MATLAB implementation counts all
+       nodes in the subtree except the root.
+       E.g. a subtree with 4 leafs then have 7-1 nodes.
+       Here we simply count the leafs and restrict them
+
+       *n_top_subtrees* corresponds to *K* mentioned briefly in the paper
+
+       The default values here follow the example_activity.m or hardcoded
+       values in the MATLAB implementation
 
 
     .. attention:: When considering the matlab implementation, be aware of
@@ -186,58 +234,53 @@ class NELTS:
        #. The paper states that the threshold used for the concepts is
           three times the height of top subtree, but it is computed incorrectly.
           See line 98 in "mypatternfinder_multilabels_v4.mat".
-          Also note it uses only one time the incorrect height of the top
-          subtree in the example_activity.mat script.
+          Also note it only uses a factor of 1 multiplied with the incorrect
+          height of the top subtree in the example_activity.mat script.
 
 
     """
 
-    def __init__(self, labels, domain_dependent_processing, settings={},
-                 subsequence_processing=SubsequenceProcessing,
-                 frequent_pattern_maintenance=FrequentPatternMaintenance,
-                 active_learning_system=ActiveLearningSystem):
-        """
-        parameters:
-            labels: labels for the data stream (not neccessarily available,
-            needs refactoring)
-            domain_dependent_processing: a function
-            settings: dict with the following parameters;
-                max_subtree_size:
-                w: size of hierarchical_clustering
-                n_samples: number of samples of each subtree size to use determine
-                    "pattern-free" parameters
-                linkage_method: method used in the hierarchical clustering
-        """
+    def __init__(self, labels, max_subtree_size=4, n_top_subtrees=6, w=20,
+                 linkage_method='average', n_offline_samples=1e5,
+                 threshold_factor=1, query_trigger_threshold=-norm.ppf(0.7),
+                 output_mode='plotting'):
 
-        self.settings = self.parse_settings(settings)
+        self.settings = {key: value for key, value in locals().items() if key
+                         not in ['self', 'labels']}
+        set_trace()
 
-        self.domain_dependent_processing = domain_dependent_processing
+        self.subsequence_processing = SubsequenceProcessing()
 
-        self.subsequence_processing = subsequence_processing()
+        self.frequent_pattern_maintenance = FrequentPatternMaintenance(
+            w=w, max_subtree_size=max_subtree_size,
+            n_top_subtrees=n_top_subtrees,
+            linkage_method=linkage_method,
+            output_mode=output_mode)
 
-        self.frequent_pattern_maintenance = frequent_pattern_maintenance(
-            self.settings['w'], self.settings['max_subtree_size'],
-            self.settings['n_top_subtrees'],
-            self.settings['linkage_method'],
-            self.settings['output_mode'])
-
-        self.active_learning_system = active_learning_system(
-            self.settings['query_trigger_threshold'],
-            self.settings['threshold_factor'],
+        self.active_learning_system = ActiveLearningSystem(
+            query_trigger_threshold=query_trigger_threshold,
+            threshold_factor=threshold_factor,
             labels=labels)
 
         # list of dicts with concept information
         self.concept_dict = {'labels': [], 'thresholds': [], 'counts': [],
                              'prototypes': []}
 
-    def never_ending_learning(self, subsequence_length, S=None, P=None,
-                              options=None):
+    def never_ending_learning(self, subsequence_length, S=None):
+        """ The main loop evaluating the data stream
 
-        if S is None and P is not None:
-            self.S = self.transform_P_to_s(P)
-        elif S is not None:
+        Parameters
+        ----------
+        subsequence_length : int
+            Length of the subsequences to extract from the data stream
+        S : np.array with shape (1, N)
+            The data stream array of length N.
+
+
+        """
+
+        if S is not None:
             self.S = SequenceData(S, subsequence_length)
-            self.P = P
         else:
             print('No data given...')
             return
@@ -245,7 +288,7 @@ class NELTS:
         self.initialize_learning()
         self.frequent_pattern_buffer = np.empty((0, subsequence_length))
 
-        for sub, pos in self.get_next_subsequence_from_S():
+        for sub, pos in self.get_next_subsequence():
             # print(pos)
             try:
                 detected, self.concept_dict = self.subsequence_processing.detect(
@@ -278,17 +321,14 @@ class NELTS:
         self.S.diff_threshold = self.frequent_pattern_maintenance.hierarchical_clustering.baseline_mean[
             0]
 
-    def get_next_subsequence_from_S(self):
+    def get_next_subsequence(self):
 
-        subsequence_length = self.S.subsequence_length
-        full_sequence = self.domain_dependent_processing(self.S.sequence)
+        current_subsequence = np.repeat(
+            [float('inf')], self.S.subsequence_length)
 
-        current_subsequence = np.repeat([float('inf')], subsequence_length)
-
-        full_sequence_length = full_sequence.shape[1]
-        for i in range(full_sequence_length-subsequence_length):
+        for i in range(self.S.sequence.shape[1]-self.S.subsequence_length):
             next_candidate_subsequence = zscore(
-                full_sequence[0, i:i+subsequence_length], ddof=1)
+                self.S.sequence[0, i:i+self.S.subsequence_length], ddof=1)
 
             euc_dist = np.linalg.norm(
                 current_subsequence-next_candidate_subsequence)
@@ -296,11 +336,6 @@ class NELTS:
             if euc_dist > self.S.diff_threshold:
                 current_subsequence = next_candidate_subsequence.reshape(1, -1)
                 yield current_subsequence, i
-
-    def transform_P_to_S(self, P):
-        # Unsure whether this should be here or outside of class
-        print('Getting S from P... or not')
-        return NotImplemented
 
     def plot_concept_dict(self):
 
@@ -328,39 +363,3 @@ class NELTS:
         #    ax2.title(self.concept_dict['labels'][i])
 
         plt.show()
-
-    @staticmethod
-    def parse_settings(settings):
-        """
-
-
-        .. note:: Settings compared to the MATLAB script example_activity.m
-
-           max_subtree_size (aka overflow_num) is set to 6 in the
-           example_activity.m script, but the MATLAB implementation counts all
-           nodes in the subtree except the root.
-           E.g. a subtree with 4 leafs then have 7-1 nodes.
-           Here we simply count the leafs and restrict them
-
-           n_top_subtrees corresponds to K mentioned briefly in the paper
-
-           The default values here follow the example_activity.m or hardcoded
-           values in the MATLAB implementation
-        """
-
-        default_settings = {'max_subtree_size': 4,
-                            'n_top_subtrees': 6,
-                            'w': 20,
-                            'linkage_method': 'average',
-                            'n_offline_samples': 1e5,
-                            'threshold_factor': 1,
-                            'query_trigger_threshold': -norm.ppf(0.7),
-                            'output_mode': 'plotting'
-                            }
-
-        for key, value in default_settings.items():
-            if key not in settings.keys():
-                print('Using default value for {} (= {}).'.format(key, value))
-                settings[key] = value
-
-        return settings

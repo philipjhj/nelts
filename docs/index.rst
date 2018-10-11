@@ -10,12 +10,10 @@ Welcome to nelts's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+NELTS
+=====
 
-   core/NELTS
+    .. autoclass:: nelts.core.NELTS
+                :members:
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
