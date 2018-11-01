@@ -108,32 +108,37 @@ class FrequentPatternMaintenance:
         return frequent_pattern_buffer
 
 
-def get_label_from_stream(labels, position):
+def get_label_from_data(labels, position, prototype):
     """ A simple function getting labels from a given list as in the example
     of the MATLAB implementation.
-
-    TODO: refactor code to better handle requests from labels
     """
+    #print('providing label')
     return labels[position]
 
 
 class ActiveLearningSystem:
 
-    def __init__(self, query_trigger_threshold, threshold_factor,
-                 request_label=get_label_from_stream, labels=None):
+    def __init__(self, query_trigger_threshold, threshold_factor):
         self.query_trigger_threshold = query_trigger_threshold
         self.threshold_factor = threshold_factor
-        self._request_label = get_label_from_stream
-        self.labels = labels
+        self._request_label_function = None
+
+    @property
+    def request_label_function(self):
+        return self._request_label_function
+
+    @request_label_function.setter
+    def request_label_function(self, request_label_function):
+        self._request_label_function = request_label_function
 
     def evaluate(self, top, concept_dict, frequent_pattern_buffer, position):
 
         if top is not None and top['score'] >= self.query_trigger_threshold:
             # print('score {}'.format(top['score']))
             # print('new concept!')
-            label = self.request_label(position)
             prototype = np.mean(
                 frequent_pattern_buffer[top['leafs'], :], axis=0)
+            label = self.request_label(position, prototype)
 
             concept_dict['labels'].append(label)
             concept_dict['counts'].append(0)
@@ -146,8 +151,9 @@ class ActiveLearningSystem:
 
         return concept_dict, frequent_pattern_buffer
 
-    def request_label(self, position):
-        return self._request_label(self.labels, position)
+    def request_label(self, position, prototype):
+        #print('requesting label')
+        return self._request_label_function(position, prototype)
 
 
 class SequenceData:
@@ -240,14 +246,13 @@ class NELTS:
 
     """
 
-    def __init__(self, labels, max_subtree_size=4, n_top_subtrees=6, w=20,
+    def __init__(self, max_subtree_size=4, n_top_subtrees=6, w=20,
                  linkage_method='average', n_offline_samples=1e5,
                  threshold_factor=1, query_trigger_threshold=-norm.ppf(0.7),
                  output_mode='plotting'):
 
         self.settings = {key: value for key, value in locals().items() if key
                          not in ['self', 'labels']}
-        set_trace()
 
         self.subsequence_processing = SubsequenceProcessing()
 
@@ -259,14 +264,13 @@ class NELTS:
 
         self.active_learning_system = ActiveLearningSystem(
             query_trigger_threshold=query_trigger_threshold,
-            threshold_factor=threshold_factor,
-            labels=labels)
+            threshold_factor=threshold_factor)
 
         # list of dicts with concept information
         self.concept_dict = {'labels': [], 'thresholds': [], 'counts': [],
                              'prototypes': []}
 
-    def never_ending_learning(self, subsequence_length, S=None):
+    def never_ending_learning(self, subsequence_length, S=None, labeling_function=None):
         """ The main loop evaluating the data stream
 
         Parameters
@@ -283,6 +287,12 @@ class NELTS:
             self.S = SequenceData(S, subsequence_length)
         else:
             print('No data given...')
+            return
+
+        if labeling_function is not None:
+            self.active_learning_system.request_label_function = labeling_function
+        else:
+            print('No labeling function is provided...')
             return
 
         self.initialize_learning()
