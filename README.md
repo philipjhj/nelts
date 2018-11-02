@@ -8,6 +8,8 @@ It attempts to follow the MATLAB implementation kindly provided by the authors [
 
 This code has not yet been tested or evaluated on any data set comparable to the ones in the paper.
 
+![](model.gif)
+
 ## TODOS
 
 - Refactor the code 
