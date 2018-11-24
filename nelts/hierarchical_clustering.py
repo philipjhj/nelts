@@ -222,6 +222,6 @@ class HierarchicalClustering:
                     frequent_pattern_buffer[subtree['leafs'], :], axis=0)
                 ax_top[i].plot(mean_pattern, 'r', linewidth=5)
 
-            plt.show()
+            # plt.show()
             #input("Press Enter to continue...")
             # sleep(0.1)

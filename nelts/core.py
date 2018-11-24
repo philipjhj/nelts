@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 from . hierarchical_clustering import HierarchicalClustering
+from . extra import get_label_from_data
 
 from pdb import set_trace
 
@@ -54,12 +55,13 @@ class FrequentPatternMaintenance:
     """
 
     def __init__(self, w=20, max_subtree_size=4, n_top_subtrees=6, linkage_method='average',
-                 output_mode='plotting'):
+                 output_mode='inline'):
         # Set parameters
         self.w = w  # Size of hierarchical_clustering (memory)
         self.max_subtree_size = max_subtree_size
         self.n_top_subtrees = n_top_subtrees
         self.output_mode = output_mode
+        self.eval_counter = 0
 
         self.hierarchical_clustering = HierarchicalClustering(
             self.w, self.max_subtree_size, self.n_top_subtrees, linkage_method)
@@ -81,8 +83,15 @@ class FrequentPatternMaintenance:
             top = self.hierarchical_clustering.most_significant_subtree(x)
 
             if (hasattr(self.hierarchical_clustering, 'Z') and
-                    self.output_mode == 'plotting'):
+                    self.output_mode in ['inline', 'save']):
                 self.hierarchical_clustering.plot_status(x)
+                if self.output_mode == 'save':
+                    plt.savefig(
+                        'figures/plot_{}.jpg'.format(self.eval_counter))
+                else:
+                    plt.show()
+
+                self.eval_counter += 1
 
         return top, frequent_pattern_buffer
 
@@ -106,14 +115,6 @@ class FrequentPatternMaintenance:
                 frequent_pattern_buffer[rm_idx, :] = subsequence
 
         return frequent_pattern_buffer
-
-
-def get_label_from_data(labels, position, prototype):
-    """ A simple function getting labels from a given list as in the example
-    of the MATLAB implementation.
-    """
-    #print('providing label')
-    return labels[position]
 
 
 class ActiveLearningSystem:
@@ -202,8 +203,8 @@ class NELTS:
         Threshold for when a significance score should trigger a request for a
         label
 
-    output_mode: str, default = 'plotting'
-        Setting for choosing what kind of output should be given
+    output_mode: str, default = 'inline' ('save' for saving locally)
+        Setting for choosing what kind of output should be given.
 
     Notes
     -------
@@ -249,7 +250,7 @@ class NELTS:
     def __init__(self, max_subtree_size=4, n_top_subtrees=6, w=20,
                  linkage_method='average', n_offline_samples=1e5,
                  threshold_factor=1, query_trigger_threshold=-norm.ppf(0.7),
-                 output_mode='plotting'):
+                 output_mode='inline'):
 
         self.settings = {key: value for key, value in locals().items() if key
                          not in ['self', 'labels']}
@@ -279,8 +280,10 @@ class NELTS:
             Length of the subsequences to extract from the data stream
         S : np.array with shape (1, N)
             The data stream array of length N.
-
-
+        labeling_function: callable, or array of labels
+            The function used to provide label information for data points as
+            determined by the active learning system. If labels are known for
+            the whole stream, they can be provided as an array as well.
         """
 
         if S is not None:
@@ -289,8 +292,13 @@ class NELTS:
             print('No data given...')
             return
 
-        if labeling_function is not None:
+        if callable(labeling_function):
             self.active_learning_system.request_label_function = labeling_function
+        elif len(labeling_function) == self.S.sequence.shape[1]:
+            # When the length of the stream and labeling information is
+            # available (for testing/experiments)
+            self.active_learning_system.request_label_function = lambda x, y: get_label_from_data(
+                labeling_function, x, y)
         else:
             print('No labeling function is provided...')
             return
