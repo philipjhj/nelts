@@ -1,14 +1,11 @@
 from scipy.cluster import hierarchy
 from scipy.stats import zscore
 import numpy as np
-from IPython.display import clear_output, display
-from ipywidgets import widgets
 
 from matplotlib import pyplot as plt
-import matplotlib.gridspec as gridspec
 from time import sleep
 
-from pdb import set_trace
+import ipdb
 
 
 class HierarchicalClustering:
@@ -25,8 +22,6 @@ class HierarchicalClustering:
         self.w = w
         self.max_subtree_size = max_subtree_size
         self.n_top_subtrees = n_top_subtrees
-        self.output_widget = widgets.Output(
-            layout={'height': '550px'})
 
     def fit_offline(self, sample_sequence, sequence_length, n_samples):
         """ Computes the baseline mean and std for subtrees of size 2 to
@@ -189,39 +184,3 @@ class HierarchicalClustering:
                  subtree_dist)/self.baseline_std[subtree_size-2]
 
         return score
-
-    def plot_status(self, frequent_pattern_buffer):
-
-        self.output_widget.clear_output(wait=True)
-        with self.output_widget:
-            plt.figure(figsize=(15, 15))
-            gs0 = gridspec.GridSpec(1, 2)
-            gs00 = gridspec.GridSpecFromSubplotSpec(20, 5, subplot_spec=gs0[0],
-                                                    wspace=0.35)
-            gs01 = gridspec.GridSpecFromSubplotSpec(20, 5, subplot_spec=gs0[1])
-            # gs00.update(wspace=0.35)
-            # gs01.update(hspace=0.35)
-            ax1 = plt.subplot(gs00[:, :3])
-            ax = []
-            for i in range(20):
-                ax.append(plt.subplot(gs00[i, 3:5]))
-                ax[i].plot(frequent_pattern_buffer[i, :])
-                # ax[i].set_xticks([])
-                # ax[i].set_yticks([])
-                ax[i].axis('off')
-
-            dn = hierarchy.dendrogram(self.Z, orientation='left', ax=ax1)
-
-            ax_top = []
-            for i, subtree in enumerate(self.nonoverlapping_subtrees):
-                ax_top.append(plt.subplot(gs01[2*i:2*(i+1), :]))
-                for leaf in subtree['leafs']:
-                    ax_top[i].plot(frequent_pattern_buffer[leaf, :], 'b')
-
-                mean_pattern = np.mean(
-                    frequent_pattern_buffer[subtree['leafs'], :], axis=0)
-                ax_top[i].plot(mean_pattern, 'r', linewidth=5)
-
-            # plt.show()
-            #input("Press Enter to continue...")
-            # sleep(0.1)
