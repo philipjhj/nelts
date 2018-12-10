@@ -6,6 +6,27 @@ from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import animation, rcParams
 from tqdm import tqdm
+import logging
+from datetime import datetime
+import sys
+from pathlib import Path
+
+LOGGING_LEVEL = logging.INFO
+NOW = datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
+LOGPATH = Path('logs')
+
+try:
+    LOGPATH.mkdir(parents=True)
+except FileExistsError:
+    pass
+
+logging.basicConfig(
+    level=LOGGING_LEVEL,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler('logs/{}.log'.format(NOW)),
+        logging.StreamHandler(sys.stdout)
+    ])
 
 #rcParams['figure.dpi'] = 150
 
@@ -68,7 +89,7 @@ class NeverEndingFramework:
     concept_learner = attr.ib()
     verbose = attr.ib(default=True)
     plots = attr.ib(factory=list)
-    output_mode = attr.ib(default='inline')
+    output_mode = attr.ib(default='save')
     output_widget = attr.ib(
         default=widgets.Output(layout={'height': '550px'}))
 
@@ -88,9 +109,15 @@ class NeverEndingFramework:
         # with self.output_widget:
         status_plots = self.concept_learner.plot_clusters()
         if status_plots:
-            # plt.show()
-            plt.savefig('figures/plot_{}.jpg'.format(self.data.current_idx))
-            plt.close()
+            if self.output_mode == 'save':
+                plt.savefig(
+                    'figures/plot_{}.jpg'.format(self.data.current_idx))
+                plt.close()
+            elif self.output_mode == 'inline':
+                plt.show()
+            else:
+                logging.debug('No output chosen, closing figure.')
+                plt.close()
 
     def plot_run(self):
         ani = animation.ArtistAnimation(

@@ -96,9 +96,6 @@ class NELTSConceptLearner(NeverEndingConceptLearner):
         Threshold for when a significance score should trigger a request for a
         label
 
-    output_mode: str, default = 'inline' ('save' for saving locally)
-        Setting for choosing what kind of output should be given.
-
     Notes
     -------
     .. note:: Differences to the algorithm described in the paper/provided in the MATLAB implementation:
@@ -277,13 +274,12 @@ class FrequentPatternMaintenance:
            Answer(2): All nodes in the subtree minus 1 (the root)
     """
 
-    def __init__(self, w=20, max_subtree_size=4, n_top_subtrees=6, linkage_method='average',
-                 output_mode='inline'):
+    def __init__(self, w=20, max_subtree_size=4, n_top_subtrees=6,
+                 linkage_method='average'):
         # Set parameters
         self.w = w  # Size of hierarchical_clustering (memory)
         self.max_subtree_size = max_subtree_size
         self.n_top_subtrees = n_top_subtrees
-        self.output_mode = output_mode
 
         self.hierarchical_clustering = HierarchicalClustering(
             self.w, self.max_subtree_size, self.n_top_subtrees, linkage_method)

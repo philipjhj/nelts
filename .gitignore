@@ -3,3 +3,8 @@
 .rope*
 *pycache*
 docs/_build
+
+
+# Directories not to be version controlled
+temp
+logs
