@@ -59,6 +59,98 @@ class IdentityPreprocessor(DataStreamPreprocessor):
         return data_point
 
 
+# @attr.s
+# class incrementalBHCConceptLearner(NeverEndingConceptLearner):
+#    """Concept learner NELTS (Towards Never-Ending Learning for Time-Series)
+#
+#    """
+#    cluster_buffer = attr.ib()
+#    concepts = attr.ib(default={'labels': [], 'thresholds': [], 'counts': [
+#    ], 'prototypes': []})  # Concepts are clusters with a label
+#
+#    def fit(self, data_point, label):
+#
+#    def is_known(self, data_point):
+#
+#    def plot_clusters(self):
+#        if self.was_known:
+#            return False
+#
+#        HC = self.frequent_pattern_maintenance.hierarchical_clustering
+#        success = False
+#        try:
+#            top = HC.most_significant_subtree(self.cluster_buffer)
+#
+#            gs0 = gridspec.GridSpec(1, 2)
+#            gs00 = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs0[0])
+#            gs01 = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=gs0[1])
+#            gs010 = gridspec.GridSpecFromSubplotSpec(
+#                10, 1, subplot_spec=gs01[0])
+#            gs011 = gridspec.GridSpecFromSubplotSpec(
+#                1, 1, subplot_spec=gs01[1])
+#            # gs02 = gridspec.GridSpecFromSubplotSpec(20, 5, subplot_spec=gs0[2])
+#
+#            gs001 = gridspec.GridSpecFromSubplotSpec(
+#                self.cluster_buffer.shape[0], 1, subplot_spec=gs00[1], wspace=0.35)
+#
+#            fig = plt.figure(figsize=(15, 15))
+#            ax_dendogram = fig.add_subplot(gs00[0])
+#            dn = hierarchy.dendrogram(
+#                HC.Z, orientation='left', get_leaves=True, ax=ax_dendogram)
+#
+#            ax_leafs = []
+#            steps = int(20/(self.cluster_buffer.shape[0]))
+#            for i in range(self.cluster_buffer.shape[0]):
+#                ax_leafs.append(fig.add_subplot(
+#                    gs001[i, :]))
+#
+#            for i, lidx in enumerate(dn['leaves']):
+#                ax_leafs[i].plot(self.cluster_buffer[lidx, :])
+#                ax_leafs[i].axis('off')
+#
+#            ax_clusters = []
+#            for i, subtree in enumerate(HC.nonoverlapping_subtrees):
+#                ax_clusters.append(fig.add_subplot(gs010[i:(i+1), :]))
+#                for leaf in subtree['leafs']:
+#                    ax_clusters[i].plot(
+#                        self.cluster_buffer[leaf, :], 'b')
+#
+#                mean_pattern = np.mean(
+#                    self.cluster_buffer[subtree['leafs'], :], axis=0)
+#
+#                ax_clusters[i].plot(mean_pattern, 'r', linewidth=5)
+#
+#            try:
+#                self.plot_concepts(gs011)
+#            except ValueError:
+#                pass
+#            success = True
+#
+#        except ValueError:
+#            pass
+#
+#        return success
+#
+#    def plot_concepts(self, gridspec):
+#        pca = PCA(n_components=2)
+#        prototypes = np.vstack(self.concepts['prototypes'])
+#        prototypes_2d = pca.fit_transform(prototypes)
+#
+#        colors = 'rgby'  # TODO: make this dynamic
+#
+#        fig = plt.gcf()
+#        ax1 = fig.add_subplot(gridspec[0])
+#
+#        for i, prototype in enumerate(prototypes_2d):
+#            color = colors[self.concepts['labels'][i][0]-1]
+#            ax1.plot(prototype[0], prototype[1], '.', color=color)
+#            width = self.concepts['thresholds'][i]/pca.singular_values_[0]
+#            height = self.concepts['thresholds'][i]/pca.singular_values_[1]
+#            ax1.add_artist(Ellipse((prototype[0], prototype[1]),
+#                                   width, height,
+#                                   color=color, fill=False))
+#
+
 @attr.s
 class NELTSConceptLearner(NeverEndingConceptLearner):
     """Concept learner NELTS (Towards Never-Ending Learning for Time-Series)
