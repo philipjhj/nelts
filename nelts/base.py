@@ -11,22 +11,6 @@ from datetime import datetime
 import sys
 from pathlib import Path
 
-LOGGING_LEVEL = logging.INFO
-NOW = datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
-LOGPATH = Path('logs')
-
-try:
-    LOGPATH.mkdir(parents=True)
-except FileExistsError:
-    pass
-
-logging.basicConfig(
-    level=LOGGING_LEVEL,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler('logs/{}.log'.format(NOW)),
-        logging.StreamHandler(sys.stdout)
-    ])
 
 #rcParams['figure.dpi'] = 150
 
@@ -125,5 +109,18 @@ class NeverEndingFramework:
         plt.show()
 
 
-if __name__ == "__main__":
-    print('hi')
+# if __name__ == "__main__":
+#
+#    LOGPATH = Path('logs')
+#
+#    LOGPATH.mkdir(parents=True, exist_ok=True)
+#
+#    NOW = datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
+#    LOGGING_LEVEL = logging.INFO
+#    logging.basicConfig(
+#        level=LOGGING_LEVEL,
+#        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+#        handlers=[
+#            logging.FileHandler(LOGPATH/'{}.log'.format(NOW)),
+#            logging.StreamHandler(sys.stdout)
+#        ])
