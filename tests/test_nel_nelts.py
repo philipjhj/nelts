@@ -1,5 +1,5 @@
 from scipy.io import loadmat
-from src.nelts.nelts.core import FrequentPatternMaintenance, \
+from nelts.core import FrequentPatternMaintenance, \
     ActiveLearningSystem, NELTSConceptLearner, NeverEndingFramework, \
     IdentityPreprocessor, SequenceStream
 from scipy.stats import norm
